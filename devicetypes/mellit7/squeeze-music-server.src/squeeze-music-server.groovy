@@ -15,14 +15,12 @@
  preferences {
     
 	section("Server Information"){
-        paragraph "Input the Logictech Media Server (Squeezebox) IP address and communication port.  By default it is 9000."
 			input "internal_ip", "text", title: "Server IP, should be a static address", required: true, displayDuringSetup: true
 			input "internal_port", "text", title: "Server Port (usually 9000)", required: true, displayDuringSetup: true
 
 	
 	}
  	section("Player Information"){
-	    paragraph "Input the MAC Id for up to 5 players, include colons.  IP address can be used, but should be a static address."
         	input "player_mac1", "text", title: "Player 1 MAC ID", required: false, displayDuringSetup: true  
         	input "player_mac2", "text", title: "Player 2 MAC ID", required: false, displayDuringSetup: true
         	input "player_mac3", "text", title: "Player 3 MAC ID", required: false, displayDuringSetup: true

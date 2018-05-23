@@ -13,7 +13,7 @@
  */
  
  preferences {
-    
+    input name: "shuffleOff", type: "enum", title: "Turn off Shuffle", options: ["yes", "no"], description: "Turn off shuffle with stop command?", required: no
 }
 
 metadata {
@@ -139,8 +139,11 @@ def pause() {
 def stop() {
 
   	def playerId = device.deviceNetworkId
-   	def path_data = "p0=playlist&p1=shuffle&p2=0"  //Turn off Shuffle
-	parent.makeLANcall(path_data, playerId)
+    def path_data
+	if (shuffleOff == null || shuffleOff == "yes") { 
+	   	path_data = "p0=playlist&p1=shuffle&p2=0"  //Turn off Shuffle
+		parent.makeLANcall(path_data, playerId)
+    }
     path_data = "p0=stop"
    	parent.makeLANcall(path_data, playerId)
    	log.debug "Executing STOP Player: $playerId" 
@@ -193,9 +196,17 @@ def setLevel(level) {
 
 }
 
-def setPlaybackShuffle() {
+def setPlaybackShuffle(controlInput) {
 
-	def controlValue = (device.currentValue("playbackShuffle") == "0" ) ? 1 : 0
+//	log.debug "SHUFFLE CONTROL INPUT ${controlInput}"
+    
+    def controlValue
+    if (controlInput != null) {
+    	controlValue = controlInput
+    }
+    else {
+    	controlValue = (device.currentValue("playbackShuffle") == "0" ) ? "1" : "0"
+    }
   	def playerId = device.deviceNetworkId
    	def path_data = "p0=playlist&p1=shuffle&p2=${controlValue}"  
 	parent.makeLANcall(path_data, playerId)
