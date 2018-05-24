@@ -15,9 +15,11 @@ Current version: 1.0
 
 3.  **IMPORTANT**  Do not skip this or things will not work.  While in the IDE, update the Deivce Network Id with the Hex equivalent of the ip and port values.  The value has been calcuated and displayed in the device details in the IDE as part of currentActivity.  You can do this as part of step 2 if you know how to find this value, but for simplicity's sake, it is calculated and displayed for you.
 
-4.  Add players by entering the MAC id of the player.  If things are working correctly, a device will be created for each player entered and the player Count will adjust accordingly.  Each Player device will be named using the name from the LMS Server data.
+4.  Add players by entering the MAC id of the player.  If things are working correctly, a device will be created for each player entered and the player count will adjust accordingly.  Each Player device will be named using the name from the LMS Server data.
 
 Once players are created, everything is installed and should be working. By default, the stop command includes a turn off shuffle command as well.  This can be turned off through a setting in the player.
+
+At this point your only interaction with the server device should be to add or delete players.  All other actions and commands are done through the player device.  Each player is controlled separately.
 
 ### Player Notes
 
