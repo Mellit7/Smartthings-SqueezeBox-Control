@@ -96,9 +96,9 @@ def parse(description) {
 //	 log.debug headerString
 
      def headerMap = msg.headers
-/*	  headerMap.each { key, value ->
+	  headerMap.each { key, value ->
 	   		log.debug "KEYVAL:  $key VALCONTENTS  $value"
-      } */
+      } 
 
 
 //   def body = msg.body
@@ -307,7 +307,7 @@ def buildPlayer(playerMAC, playerName) {
  
 	log.debug "New Player:  ${playerMAC} ${playerName}"
                 
-	addChildDevice("MLittle", "Squeeze Music Player", playerMAC, null,
+	addChildDevice("Mellit7", "Squeeze Music Player", playerMAC, null,
                             [completedSetup: true, isComponent: false, name: playerName])
             
         
