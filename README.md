@@ -68,4 +68,5 @@ By default, the stop command includes a turn off shuffle command as well.  This 
 **Player**
 
 **1.0.1** 06/04/2018 Add additional state for Shuffle to match new server reporting values.
+
 **1.0**   05/24/2018 Initial release
