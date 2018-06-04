@@ -71,10 +71,10 @@ metadata {
         
 
         
-        standardTile("shuffle", "playbackShuffle", width: 2, height: 2, canChangeIcon: true, decoration: "flat") {
-			state "0", label: 'Shuffle', action: "setPlaybackShuffle", icon: "st.secondary.off", backgroundColor: "#dddddd", nextState: "1"
-			state "1", label: 'Shuffle\nSong', action: "setPlaybackShuffle", icon: "st.illuminance.illuminance.light", backgroundColor: "#79b821", nextState: "0"
-//            state "2", label: 'Shuffle\nAlbum', action: "setPlaybackShuffle", icon: "st.illuminance.illuminance.light", backgroundColor: "#5fd5f9", nextState: "0"
+        standardTile("shuffle", "playbackShuffle", width: 2, height: 2, canChangeIcon: true) {
+			state "0", label: 'Shuffle', action: "setPlaybackShuffle",  backgroundColor: "#dddddd", nextState: "1"
+			state "1", label: 'Shuffle\nSong', action: "setPlaybackShuffle",  backgroundColor: "#79b821", nextState: "2"
+            state "2", label: 'Shuffle\nAlbum', action: "setPlaybackShuffle",  backgroundColor: "#5fd5f9", nextState: "0"
 		}
         
 /*        standardTile("repeat", "device.switch", width: 2, height: 2, canChangeIcon: true) {
@@ -205,8 +205,23 @@ def setPlaybackShuffle(controlInput) {
     	controlValue = controlInput
     }
     else {
-    	controlValue = (device.currentValue("playbackShuffle") == "0" ) ? "1" : "0"
+    	switch (device.currentValue("playbackShuffle")) {
+ 		  	case "0" :
+            	controlValue = "1"
+        		break        
+ 		  	case "1" :
+            	controlValue = "2"
+        		break         
+ 		  	case "2" :
+            	controlValue = "0"
+        		break         
+	        default:
+    			controlValue = "0"       
+        
+        }
+    
     }
+//    log.debug "SHUFFLE VALUE : ${controlValue}  ${device.currentValue("playbackShuffle")}"
   	def playerId = device.deviceNetworkId
    	def path_data = "p0=playlist&p1=shuffle&p2=${controlValue}"  
 	parent.makeLANcall(path_data, playerId)
