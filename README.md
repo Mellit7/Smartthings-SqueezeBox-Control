@@ -5,7 +5,11 @@ These device handlers provides Smartthings control of multiple Logitech Media Se
 
 This is the initial version, with basic music player functions.  See to do list below for hoped for future features. This is a simple start, so bugs may occur, but testing is the only way to find them.
 
-Current version: 1.0
+#### Current version: (See notes below for details)
+
+**Server** 1.1
+
+**Player** 1.0.1
 
 ### INSTALLATION INSTRUCTIONS
 
@@ -56,4 +60,12 @@ By default, the stop command includes a turn off shuffle command as well.  This 
 
 ### Versions
 
-1.0  Initial release
+**Server**
+
+**1.1**  06/04/2018 Implemented communication method compatible with LMS 7.9 since original method was discontinued.  This introduced two functional changes.  Shuffle now correctly reports all the states in LMS.  Volume is reported in increments of 9.  Any volume can still be sent to the player, but the returned reported volume will be reported as a factor of 9.  
+**1.0**  05/24/2018 Initial release
+
+**Player**
+
+**1.0.1** 06/04/2018 Add additional state for Shuffle to match new server reporting values.
+**1.0**   05/24/2018 Initial release
