@@ -46,7 +46,7 @@ By default, the stop command includes a turn off shuffle command as well.  This 
 - mute()
 - unmute()
 - setLevel(level)  volume control, values 0-100
-- setPlaybackShuffle(controlInput)   string controlInput values "0" \- Off "1" \- On
+- setPlaybackShuffle(controlInput)   string controlInput values "0" \- Off "1" \- Song "2' \- Album
 
 
 ### To Do Wish List
