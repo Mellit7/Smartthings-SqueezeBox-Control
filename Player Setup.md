@@ -6,7 +6,7 @@ If none of this matters to you, simply ignore it all, nothing is required for pr
 
 ### **Player Options Instructions**
 
-**Voice for Speech** Select a voice to use with the speak command if you don't like the defaul of Salli
+**Voice for Speech** Select a voice to use with the speak command if you don't like the default of Salli
 
 **Volume for Speech** Select a volume that the speak command will use. Volume wil be changed for speech event, and then restored to previous value. This comes in handy if you are using Chromecast devices such as a Google Home.
 
@@ -22,7 +22,7 @@ You only need to supply the parameter info (p0-p4), the device handler will fill
 
 Remember these apply only to the one player.  Each player can have its own set of similar or completely different commands.
 
-So for example if you wanted to play genre jazz, enter p0=playlist&p1=loadalbum&p2=Jazz or to play an artist p0=playlist&p1=loadalbum&p2=*&p3=Nick%20Lowe&p4=*  Note that spaces must be unicode replaced.  So, to play your playist called Morning Mix, p0=playlist&p1=play&p2=Morning%20Mix, and yes, it is case sensitive.
+So for example if you wanted to play genre jazz, enter p0=playlist&p1=loadalbum&p2=Jazz or to play an artist p0=playlist&p1=loadalbum&p2=\*&p3=Nick%20Lowe&p4=\*  Note that spaces must be unicode replaced.  So, to play your playist called Morning Mix, p0=playlist&p1=play&p2=Morning%20Mix, and yes, it is case sensitive.
 
 With some internet searching, you may find syntax for things like Pandora.
 
