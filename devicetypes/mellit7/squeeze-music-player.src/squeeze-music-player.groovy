@@ -29,12 +29,12 @@
     input name: "speechVolume", type: "string", title: "Volume for Speech", description: "Desired volume for Speech Requests", required: no
 	input name: "shuffleOff", type: "enum", title: "Turn off Shuffle/Repeat", options: ["shuffle", "repeat", "both", "none"], description: "Turn off shuffle and/or repeat with stop command? Defaults to both", required: no
     input name: "squeezeLite", type: "enum", title: "SqueezeLite", options: ["yes", "no"], description: "Is this a SqueezeLite player? (not Chromecast)? Defaults to no", required: no
-    input name: "button1Command", type: "string", title: "Button 1 Command", description: "Server command for Button 1", required: no
-    input name: "button1Extra", type: "enum", title: "Button 1 Extra Commands", options: ["shuffle", "repeat", "both", "none"], description: "Add shuffle and/or repeat to Button 1 Command? Defaults to none", required: no
-	input name: "button2Command", type: "string", title: "Button 2 Command", description: "Server command for Button 2", required: no  
-    input name: "button2Extra", type: "enum", title: "Button 2 Extra Commands", options: ["shuffle", "repeat", "both", "none"], description: "Add shuffle and/or repeat to Button 2 Command? Defaults to none", required: no
-	input name: "button3Command", type: "string", title: "Button 3 Command", description: "Server command for Button 3", required: no
-    input name: "button3Extra", type: "enum", title: "Button 3 Extra Commands", options: ["shuffle", "repeat", "both", "none"], description: "Add shuffle and/or repeat to Button 3 Command? Defaults to none", required: no
+    input name: "button1Command", type: "string", title: "Preset 1 Command", description: "Server command for Preset 1", required: no
+    input name: "button1Extra", type: "enum", title: "Preset 1 Extra Commands", options: ["shuffle", "repeat", "both", "none"], description: "Add shuffle and/or repeat to Preset 1 Command? Defaults to none", required: no
+	input name: "button2Command", type: "string", title: "Preset 2 Command", description: "Server command for Preset 2", required: no  
+    input name: "button2Extra", type: "enum", title: "Preset 2 Extra Commands", options: ["shuffle", "repeat", "both", "none"], description: "Add shuffle and/or repeat to Preset 2 Command? Defaults to none", required: no
+	input name: "button3Command", type: "string", title: "Preset 3 Command", description: "Server command for Preset 3", required: no
+    input name: "button3Extra", type: "enum", title: "Preset 3 Extra Commands", options: ["shuffle", "repeat", "both", "none"], description: "Add shuffle and/or repeat to Preset 3 Command? Defaults to none", required: no
 }
 
 metadata {
