@@ -3,13 +3,15 @@ Smartthings Control for Logitech Media Server and Players (Squeezebox)
 
 These device handlers provides Smartthings control of multiple Logitech Media Server (Squeezebox) players through a single server interface.
 
-This is the initial version, with basic music player functions.  See to do list below for hoped for future features. This is a simple start, so bugs may occur, but testing is the only way to find them.
+This is hopefully the stable version, with expanded music player functions. Testing has been limited to my usage, so bugs may still occur.
+
+There is an optional smartapp to associate momentary buttons with player functions.  See separate documentation for usage.
 
 #### Current version: (See notes below for details)
 
-**Server** 1.1
+**Server** 1.2
 
-**Player** 1.0.1
+**Player** 1.2
 
 ### INSTALLATION INSTRUCTIONS
 
@@ -46,27 +48,39 @@ By default, the stop command includes a turn off shuffle command as well.  This 
 - mute()
 - unmute()
 - setLevel(level)  volume control, values 0-100
-- setPlaybackShuffle(controlInput)   string controlInput values "0" \- Off "1" \- Song "2" \- Album
+- setPlaybackShuffle(controlInput)   string controlInput values "0" \- Off "1" \- Shuffle by Song "2" \- Shuffle by Album
+- setPlaybackRepeatMode(mode) string mode values "0" \- Off "1" \- Repeat Song "2" \- Repeat Playlist
+- speak(msg)  string msg is message to say
+- playTrack(uri) string uri is a track path valid in LMS
+- def playTrackAndResume(uri, duration, volume)  string uri is a track path valid in LMS
+- def playTrackAndRestore(uri, duration, volume=null) string uri is a track path valid in LMS
 
 
 ### To Do Wish List
 
-- [ ] Smart app to manage virtual buttons for voice control
-- [ ] Implement Preset buttons for playing predefined sets of music
-- [ ] Test custom command input for smart app use
-- [ ] Implement Repeat function
-- [ ] Implement Speak  
-- [ ] Implement Speak with resume (probably limited to restarting song last playing in playlist)
+- [X] Smart app to manage virtual buttons for voice control
+- [X] Implement Preset buttons for playing predefined sets of music
+- [X] Test custom command input for smart app use
+- [X] Implement Repeat function
+- [X] Implement Speak  
+- [X] Implement Speak with resume (probably limited to restarting song last playing in playlist)
+- [ ] Implement power on/off button
+
 
 ### Versions
 
 **Server**
 
-**1.1**  06/04/2018 Implemented communication method compatible with LMS 7.9 since original method was discontinued.  This introduced two functional changes.  Shuffle now correctly reports all the states in LMS.  Volume is reported in increments of 9.  Any volume can still be sent to the player, but the returned reported volume will be reported as a factor of 9.  
+**1.2**  06/29/2018 Implemented the ability to process multiple server commands as a set to for sequential processing and allow for delays. Fixed volume to report in correct increments of 10.
+
+**1.1**  06/04/2018 Implemented communication method compatible with LMS 7.9 since original method was discontinued.  This introduced two functional changes.  Shuffle now correctly reports all the states in LMS.  Volume is reported in increments of 9.  Any volume can still be sent to the player, but the returned reported volume will be reported as a factor of 9. 
+
 **1.0**  05/24/2018 Initial release
 
 **Player**
 
+**1.2**   06/29/2018 Implemented repeat function, speech synthesis, play track and resume, play track and restore, and set of 3 buttons to use as presets. Ther are several new player settings, all of which remain optional, to customize the function of each individual player.  See custom control documentation on how to use preset buttons.
+ 
 **1.0.1** 06/04/2018 Add additional state for Shuffle to match new server reporting values.
-
+ 
 **1.0**   05/24/2018 Initial release
