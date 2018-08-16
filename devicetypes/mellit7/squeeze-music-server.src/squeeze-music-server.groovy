@@ -1,7 +1,7 @@
 /**
  *  Squeeze Music Server
  *
- *  Version 1.2 June 29, 2018
+ *  Version 2.0 August 16, 2018
  *
  *  Written by Melinda Little 2018
  *
@@ -94,7 +94,7 @@ def updated() {
 
 def parse(description) {
 
-//   log.debug "Entering Parse"
+   log.debug "Entering Parse"
 
 	def msg = parseLanMessage(description)
 
@@ -120,7 +120,6 @@ def makeLANcall(path_cmd, playerMAC, callHandler) {
     	path_cmd = "/status.html?${path_cmd}&player=${playerMAC}"
      
     }
-//     log.debug  "Path Command '${path_cmd}'"
 	def result = [delayAction(200), new physicalgraph.device.HubAction(
 				method: "GET",
 				path: "${path_cmd}",
@@ -134,26 +133,49 @@ def makeLANcall(path_cmd, playerMAC, callHandler) {
 
 }
 
+def makeJSONcall(params, playerMAC, callHandler) {
+
+	def port = internal_port ?: 9000
+	if (callHandler == null) {callHandler = "JSONhandler"}
+    if(params == null) {params = statusCommand}
+	def commandString = buildJSON(params, playerMAC)
+
+	def result = [delayAction(200), new physicalgraph.device.HubAction(
+				method: "POST",
+				path: "/jsonrpc.js",
+                body: "${commandString}",
+				headers: [
+					HOST: "${internal_ip}:${port}",
+                    "Content-Type" : 'application/json'
+				], null, [callback: "${callHandler}"]
+				)]
+	sendHubCommand(result)
+
+	log.debug result
+
+}
+
 def refresh(playerMAC) {
 
-    def path_data = "status"
-    makeLANcall(path_data, playerMAC, null)
+	def params = statusCommand
+    log.debug "REFRESH PARAMS ${params}"
+	makeJSONcall(params, playerMAC, "JSONhandler")
 
 }
 
 def playerBuild(index) {
-		sendEvent(name: "buildingPlayer", value: index)
-//	def playerMAC = null
+
+	sendEvent(name: "buildingPlayer", value: index)
+
     def playerList = [player_mac1, player_mac2, player_mac3, player_mac4, player_mac5]
     def playerMAC = playerList[index-1]
 
 	log.debug "Player ${index} mac: ${playerMAC}"
     
 	if (playerMAC != null) {
-    	def path_data = "status"
-//		def buildHandler = "buildHandler${index}"
-//     	log.debug "HANDLER: ${buildHandler}"
-		makeLANcall(path_data, playerMAC, "buildHandler")
+		def params = statusCommand
+		makeJSONcall(params, playerMAC, "buildHandler")
+
 	}
     else{
     	if (index < 5) {
@@ -163,64 +185,62 @@ def playerBuild(index) {
     }
 }
 
-def buildHandler(description) {
+def buildHandler(msg) {
+
+    def playerList = [player_mac1, player_mac2, player_mac3, player_mac4, player_mac5]
 	def currentPlayer = device.currentValue("buildingPlayer").toInteger()
-//	log.debug " ***IN buildhandler ${currentPlayer}"
-    def body = description.body
-	finishParse(body)
+    def playerMAC = playerList[currentPlayer-1]
+
+    def body = msg.body
+    def bodyJSON = new groovy.json.JsonSlurper().parseText(body)
+   	log.debug " ***IN buildhandler ${currentPlayer}  REQUESTED ${playerMAC} FOUND ${bodyJSON.params[0]}"
+    parseJSONstatus(bodyJSON)
    	if (currentPlayer < 5) {playerBuild(currentPlayer+1)}
 
 }
 
 def checkPlayer(playerMAC, playerName) {
 
-//	log.debug "Check Player"
 //    log.debug "CHECK ${playerMAC} :: ${playerName}"
-    
+    def foundChild = findChild(playerMAC)   
+
+   	if (foundChild == null){  // Player doesn't exist
+    	buildPlayer(playerMAC, playerName)
+        foundChild = findChild(playerMAC)  //Reload child list to update with new device
+    }  
+
+	log.debug "CHILD PLAYER :: ${foundChild}"
+    return foundChild
+}
+
+def findChild(playerMAC) {
+
     def children = getChildDevices()
-    def numChildren = children.size()
-//    log.debug "Check Number of Children: ${numChildren}"
-    def foundChild     
-   	if (numChildren > 0) {
-   		foundChild = children.deviceNetworkId.find { it == playerMAC}
-    }
-    else {
-       	foundChild = null
-    } 
-//   	log.debug "In Check Found Child: ${foundChild}"
-   	if (foundChild == null){buildPlayer(playerMAC, playerName)}  // Player doesn't already exist
-
-//Reload child list to update with new device
-
-    children = getChildDevices()
-    numChildren = children.size()
-//    log.debug "Num Children: ${numChildren}"
+//    log.debug "Found Number of Children: ${children.size()}"
     def foundChildIndex  
     if (children.size() > 0) {
     	foundChildIndex = children.deviceNetworkId.findIndexOf { it == playerMAC}
     }
     else {
-    	foundChildIndex = null
+    	foundChildIndex = -1
     } 
-//    log.debug "foundChildIndex: ${foundChildIndex}"
+//    log.debug "Found Child Index: ${foundChildIndex}"
     
-    def childPlayer    
-	if (foundChildIndex != null) {
+    def childPlayer
+    
+	if (foundChildIndex > -1) {
+
         childPlayer = children[foundChildIndex]
     }
     else{
-    	log.debug "FOUND INDEX FAILED"
+    	log.debug "Player ${playerMAC} Not Found"
         childPlayer = null
     }
-
-	log.debug "CHILD PLAYER :: ${childPlayer}"
-    return childPlayer
+	return childPlayer
 }
 
 def buildPlayer(playerMAC, playerName) {
 
-	log.debug "IN Build Player"
- 
 	log.debug "New Player:  ${playerMAC} ${playerName}"
                 
 	addChildDevice("Mellit7", "Squeeze Music Player", playerMAC, null,
@@ -234,7 +254,6 @@ def initialize() {
 	def displayText = "Logitech Media Server at ${internal_ip}:${internal_port}\n${hexID}"
 	sendEvent(name: "currentActivity", value: displayText)
 
-//	createPlayers()
     playerBuild(1)
 
 }
@@ -267,146 +286,114 @@ def standardHandler(description) {
 
 def finishParse(body) {
 
+	log.debug "OLD LAN COMMAND NEEDS UPDATING"
     def split1 = body.split('d value="')
 //   log.debug " FIRST SPLIT : ${split1.size()}"
 
     def split2 = split1[1].split('">')
     def playerId = split2[0]
-    def playerInfo = [playerId : split2[0]]
-    log.debug "PLAYER???  : ${playerId}"
 
-	def playerName = split2[1].split('<')[0]
-    playerInfo.playerName = split2[1].split('<')[0]
-    log.debug "Player Name: ${playerName}"
-    
-    def newBody = split1[1]
-//    log.debug newBody
+    log.debug "PARSE PLAYER : ${playerId}"
 
-    split2 = newBody.split('playingStatus">')
-//   log.debug "SPLIT 2  ${split2[1]}"
-
-	def probeStatus = split2[1].split('Now ')[1]
-//    def playerStatus
-    
-    if (probeStatus?.startsWith("stopped")) {
-//    	log.debug "Player status Stopped"
-//        playerStatus = "stop"
-        playerInfo.playerStatus = "stop"
+// Make JSON Status update call
+	if (playerId != null) {
+		def params = statusCommand
+		makeJSONcall(params, playerId, "JSONhandler")
     }
-	else {
-    	if (probeStatus?.startsWith("paused")) {
-// 			 log.debug "Player status paused"
-//             playerStatus = "pause"
-             playerInfo.playerStatus = "pause"
-       }
-    	else {
-        	if (probeStatus?.startsWith("Playing")){
-//        		log.debug "Player status playing"
-//                playerStatus = "play"
-		        playerInfo.playerStatus = "play"                
-        	}
-            else {
-            	log.debug "Player Status Unknown"
-            }
-        
+
+} //End Finish Parse
+
+def JSONhandler(msg) {
+	
+//    log.debug "*****IN JSON HANDLER"
+
+//    def json = msg.json
+    def body = msg.body
+    def bodyJSON = new groovy.json.JsonSlurper().parseText(body)
+    def responseType = bodyJSON.params[1][0]
+    
+//  log.debug "JSON Body result  ${bodyJSON.result}" 
+
+/* 	bodyJSON.each { key, value ->
+	   		log.debug " @@@@@@@ $key :  $value"	
+	} */
+	def playerInfo = [:]
+    switch (responseType) {
+    		case "status":
+	            playerInfo = parseJSONstatus(bodyJSON)
+            	if (bodyJSON.params[1].size()>4) {
+//                	log.debug "====IN JSON PARSE STATUS ${bodyJSON.params[1][4]}"
+                	def returned = [:]
+                	for (i in 4..(bodyJSON.params[1].size()-1)) {
+                    	returned << [(bodyJSON.params[1][i].split(":")[0]) : (bodyJSON.params[1][i].split(":",2)[1])]
+					}
+				    switch (returned.action) {
+                    	case ["speak","resume","restore"]:
+                        	def child = findChild(bodyJSON.params[0])
+	                        if (child) {child.restoreNeeded(returned.playURI, returned.durationDelay, returned.volume, returned.action)}
+	                        break
+                    	default:
+	                        break
+                    }
+                
+				} 
+        		break
+       		case "playlists": 
+            	if (bodyJSON.params[1].size()>3) {
+                	def returned = [:]
+                	for (i in 3..(bodyJSON.params[1].size()-1)) {
+                    	returned << [(bodyJSON.params[1][i].split(":")[0]) : (bodyJSON.params[1][i].split(":",2)[1])]
+					}
+                    if (returned.action == "delete"){
+                    	if (bodyJSON.result.count.toInteger() > 0) {
+                   	    	def listIndex = bodyJSON.result.playlists_loop.playlist.findIndexOf { it == returned.list}
+                            if (listIndex > -1) {
+	                    		def params = "\"playlists\",\"delete\",\"playlist_id:${bodyJSON.result.playlists_loop[listIndex].id}\""
+								makeJSONcall(params, "-", "JSONhandler")
+//								log.debug "PLAYLIST SEARCH  ${bodyJSON.result.playlists_loop[listIndex].id} ${returned.list} ${bodyJSON.result.playlists_loop[listIndex].playlist} "
+                            } else {log.debug "COULD NOT FIND PLAYLIST TO DELETE"}
+                    	} else {log.debug "NO PLAYLISTS FOUND"}
+                    }
+                }    
+                break
+            default:
+	            def params = statusCommand
+				makeJSONcall(params, bodyJSON.params[0], "JSONhandler")
+        		break
         }
-    
-    }
-	def findPlaylist = probeStatus.split("playingSong")[0]
-    findPlaylist = findPlaylist.split("of ")
-    def playlistLength
-    if (findPlaylist.size() > 1) {
-    	playlistLength = findPlaylist[1].split(":")[0].toInteger()
-    } else {playlistLength = 0}
-//    log.debug "playlist Length : ${playlistLength} ${playerInfo.playerName}"
-	playerInfo.playlistLength = playlistLength
-    newBody = probeStatus.split("playingSong")[1]
+       
+/*	  playerInfo.each { key, value ->
+	   		log.debug "JSON $key : $value"
+      } */
+   
 
-	def trackName = newBody.split('browser">')[1].split('</a')[0].replaceAll("\\s+", " ")
-   	def album
-    def artist    
-//    log.debug "Track: ${trackName}"
+}
 
-  	if (trackName.length() > 0) {
-   		newBody = probeStatus.split("from <")
+def noStatus(msg) {
+	// Empty handler when no parse action is required
+}
 
-        if (newBody.size() > 1) {
-			album = newBody[1].split('browser">')[1].split('</a')[0]
-        } else {album = null}
-//		log.debug album
+def parseJSONstatus(bodyJSON) {
 
-    	newBody = probeStatus.split("by <a")
-        if (newBody.size() > 1) {
-			artist = newBody[1].split('inline">')[1].split('</span')[0]
-        } else {artist = null}
-//    	log.debug artist
-        
-    } 
-    else {
-    	trackName = 'Nothing'
+//	log.debug "IN JSON STATUS"
+
+    def playerInfo = [playerId : bodyJSON.params[0]]
+    playerInfo.playerName = bodyJSON.result.player_name
+    log.debug "Player ${playerInfo.playerName} : ${playerInfo.playerId}"
+	playerInfo.playerStatus = bodyJSON.result.mode
+    def trackName
+    def album
+    def artist
+    if (bodyJSON.result.playlist_loop) {
+    	trackName = bodyJSON.result.playlist_loop[0].title ?: "Nothing"
+     	album = bodyJSON.result.playlist_loop[0].album ?: null
+       	artist = bodyJSON.result.playlist_loop[0].artist ?: null
+    } else {
+    	trackName = "Nothing"
         album = null
         artist = null
-    
     }
- 
-    newBody = probeStatus.split("Repeat")[1]
-	def repeatWord = newBody.split('<b>')[1].split('</b')[0]
-//    log.debug "Repeat: ${repeatWord}"
-    def repeat 
-    
-    switch (repeatWord) {
-    		case "off":
-        		repeat = 0
-        		break
-    		case "one":
-       			repeat = 1
-        		break
-    		case "all":
-        		repeat = 2
-                break    
-       		default:
-        		repeat = 0
-        }  
-	playerInfo.repeat = repeat        
-
-    newBody = probeStatus.split("Shuffle")[1]
-	def shuffleWord = newBody.split('<b>')[1].split('</b')[0]
-//    log.debug "Shuffle: ${shuffleWord}"
-    def shuffle 
-    
-    switch (shuffleWord) {
-    		case "off":
-        		shuffle = 0
-        		break
-    		case "songs":
-       			shuffle = 1
-        		break
-    		case "albums":
-        		shuffle = 2
-                break    
-       		default:
-        		shuffle = 0
-        }
-    playerInfo.shuffle = shuffle
-    
-    newBody = probeStatus.split("Volume")[1]
-	def playerVol = newBody.split('<b>')[1].split('</b')[0].toInteger()
-//    log.debug "Volume: ${playerVol}"
-    playerVol = (playerVol-1) * 10
-//    log.debug "Volume: ${playerVol}"
-    playerInfo.playerVol = playerVol
-
-//Find or build the player
-	def childPlayer
-	if (playerId != null) {
-    	childPlayer = checkPlayer(playerId, playerName)
-    } 
-    
-//	log.debug "After player check ${childPlayer}"
-    
- // Build Track Description
-
-	def longInfo    
+    def longInfo    
  	if (album && trackName) {
     
    		longInfo = "${album} - ${trackName}"                           
@@ -422,37 +409,58 @@ def finishParse(body) {
     		longInfo =  "Empty"
 		}
 	}
-    if (artist !=null) {
-        longInfo = "${artist} : ${longInfo}"
-    }
+    if (artist !=null) {longInfo = "${artist} : ${longInfo}"}
 
 //    if (playerStatus == "stop") { //Override if player is stopped
-//    	longInfo =  "Stopped"
+//    	longInfo =  longInfo = "Stopped : ${longInfo}"
 //    }
 //    log.debug "Track Description: ${longInfo}"
 
 	playerInfo.longInfo = longInfo
+    
+    playerInfo.repeat =  bodyJSON.result['playlist repeat']
+    playerInfo.shuffle =  bodyJSON.result['playlist shuffle']
+//    log.debug "JSON REPEAT AND SHUFFLE ${playerInfo.repeat} ${playerInfo.shuffle}"
+    
+    playerInfo.playlistLength = bodyJSON.result.playlist_tracks ?: 0
+    playerInfo.playerVol = bodyJSON.result['mixer volume']
+    playerInfo.power = bodyJSON.result.power
 
-/*	  playerInfo.each { key, value ->
-	   		log.debug "$key : $value"
-      } */
+/*    playerInfo.each { key, value ->
+   		log.debug "$key : $value"
+     }  */
+     
+           
+//Find or build the player
+	def childPlayer
+	if (playerInfo.playerId != null) {
+    	childPlayer = checkPlayer(playerInfo.playerId, playerInfo.playerName)
+    } 
+    
+//	log.debug "After JSON player check ${childPlayer}"    
 
 //Update the Player
 
     if (childPlayer) {
-//    	log.debug "Updating Player ${playerName}"
+//    	log.debug "JSON Updating Player ${childPlayer}"
         childPlayer.updatePlayer(playerInfo)
     }
-
+      
 //Update number of players on Server    
 	def children = getChildDevices()
     def numChildren = children.size()
     def playersLabel = "Number of Players: ${numChildren}"
     sendEvent(name: "numPlayers", value: playersLabel)
     sendEvent(name: "playerCount", value: numChildren)
+     
+	return playerInfo      
 
+}
 
-} //End Finish Parse
+def buildJSON(params, playerMAC) {
+	def commandString = "{\"id\":1,\"method\":\"slim.request\",\"params\":[\"${playerMAC}\",[${params}]]}"
+    return commandString
+}
 
 private delayAction(long time) {
 	new physicalgraph.device.HubAction("delay ${time}")
@@ -472,7 +480,13 @@ def multiHubAction(actions) {  //Process multiple hub actions as a group
         		break
         	case "status":
        			hubactions[i] = new physicalgraph.device.HubAction(method: "GET",path: "/status.html?player=${actions[i].player}",headers: [HOST: "${internal_ip}:${port}"], null, [callback: standardHandler])
-        		break        
+        		break   
+           	case "JSON":
+	            def handler = actions[i].handler ?: "JSONhandler"
+            	def commandString = buildJSON(actions[i].data, actions[i].player)
+       			hubactions[i] = new physicalgraph.device.HubAction(method: "POST",path: "/jsonrpc.js",body: "${commandString}",headers: [HOST: "${internal_ip}:${port}","Content-Type" : 'application/json'], null, [callback: "${handler}"])
+//        		log.debug "JSON HUBACTION : ${hubactions[i]}"
+                break     
        		 default:
         		log.debug "BAD MULTI HUB COMMAND"
         
@@ -482,4 +496,8 @@ def multiHubAction(actions) {  //Process multiple hub actions as a group
 //	log.debug hubactions
    	sendHubCommand(hubactions)
 
+}
+
+def getStatusCommand() {
+	return '"status","-",1,"tags:al"'
 }
