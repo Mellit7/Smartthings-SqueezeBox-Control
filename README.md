@@ -3,15 +3,19 @@ Smartthings Control for Logitech Media Server and Players (Squeezebox)
 
 These device handlers provides Smartthings control of multiple Logitech Media Server (Squeezebox) players through a single server interface.
 
-**NEW VERSION**  Version 2.0 has been uploaded.  It is a rewrite using a different communication protocal with LMS.  You do not need to reinstall devices, only update both Device Handlers.  However, **preset buttons have been converted as well, so they will need to be changed**.  See notes below for details. 
+**NEW VERSION**  Version 2.1 has been uploaded. It contains some minor improvements and a Player Install SmartApp has been added to simplify player installation.
 
-There is an optional smartapp to associate momentary buttons with player functions.  See separate documentation for usage.
+Please remember, starting with Version 2.0 a different communication protocal with LMS is used.  You do not need to reinstall devices, only update both Device Handlers.  However, **preset buttons have been converted as well, so they will need to be changed**.  See notes in player setup for details. 
+
+There is an optional SmartApp to associate momentary buttons with player functions.  See separate documentation for usage.
+
+There is a new options SmartApp to make player installation easier.  It eliminates the need to find and enter player MAC addresses. The manual method in step 4 below still works.
 
 #### Current version: (See notes below for details)
 
-**Server** 2.0
+**Server** 2.1
 
-**Player** 2.0
+**Player** 2.1
 
 ### INSTALLATION INSTRUCTIONS
 
@@ -21,6 +25,8 @@ There is an optional smartapp to associate momentary buttons with player functio
 
 3.  **IMPORTANT**  Do not skip this or things will not work.  While in the IDE, update the Deivce Network Id field with the Hex equivalent of the ip and port values.  The value has been calcuated and displayed in the device details in the IDE as part of currentActivity.  You can do this as part of step 2 if you know how to find this value, but for simplicity's sake, it is calculated and displayed for you.
 
+From here you may proceed to step 4 or use the new Player Install SmartApp.  If you only have one or two players, you may find the manual version suffificent, but if you have several players, the SmartApp will make the process easier.
+
 4.  Add players by entering the MAC id of the player.  If things are working correctly, a device will be created for each player entered and the player count will adjust accordingly.  Each Player device will be named using the name from the LMS Server data.
 
 Once players are created, everything is installed and should be working. By default, the stop command includes a turn off shuffle command as well.  This can be turned off through a setting in the player.
@@ -29,7 +35,7 @@ At this point your only interaction with the server device should be to add or d
 
 ### Player Notes
 
-Players can be added up to 5 at a time.  If you need more than 5 players, since players are not deleted, additon players can be added by simply entering new MAC values and saving the player settings again. 
+**For manual installation only** Players can be added up to 5 at a time.  If you need more than 5 players, since players are not deleted, additon players can be added by simply entering new MAC values and saving the player settings again. If you have more than 5 players, you may find the installation SmartApp easier.
 
 Players are not automatically deleted unless the server device is deleted.  This is to minimize impact on any smart apps installed.  If a player device needs deleting, manually delete it in the app or IDE first, and then edit the settings preferences in the server and remove the MAC id from the list.  Otherwise the player will be recreated the next time settings are updated.  Testing found that after deleting a player, settings needs to be resaved to properly update the device.  Otherwise, it will throw errors.
 
@@ -52,7 +58,7 @@ By default, the stop command includes a turn off shuffle command as well.  This 
 - setLevel(level)  volume control, values 0-100
 - setPlaybackShuffle(controlInput)   string controlInput values "0" \- Off "1" \- Shuffle by Song "2" \- Shuffle by Album
 - setPlaybackRepeatMode(mode) string mode values "0" \- Off "1" \- Repeat Song "2" \- Repeat Playlist
-- speak(msg)  string msg is message to say
+- speak(msg, voice)  string msg is message to say, voice is an optional string parameter to override voice used for an individual speak command. It should contain a voice name that matches one from the input list in the device.  Voice is optional and existing commands not containing it will continue to function. 
 - playTrack(uri) string uri is a track path valid in LMS
 - def playTrackAndResume(uri, duration, volume)  string uri is a track path valid in LMS
 - def playTrackAndRestore(uri, duration, volume) string uri is a track path valid in LMS
@@ -68,6 +74,8 @@ By default, the stop command includes a turn off shuffle command as well.  This 
 
 **Server**
 
+**2.1**  11/13/2018 Changes to support Player Install SmartApp.  Player Label Field now populated on player installation.
+
 **2.0**  08/16/2018 Communication with LMS changed to JSON method.  Devices to not need to be reinstalled.  This change eliminates the need for LMS to be in English.
 
 **1.2**  06/29/2018 Implemented the ability to process multiple server commands as a set to for sequential processing and allow for delays. Fixed volume to report in correct increments of 10.
@@ -77,6 +85,8 @@ By default, the stop command includes a turn off shuffle command as well.  This 
 **1.0**  05/24/2018 Initial release
 
 **Player**
+
+**2.1**  11/13/2018 Added new speech voice supported by Polly. New parameter on speak command to allow one time override of voice to use.  Existing speak commands do not need changing.  Using voice parameter does not change any defaults for other instances.  An error in the speak command will now play a "ding ding" type sound. Check the error logging for details about the error.  This will most commonly be a bad voice input.
 
 **2.0**  08/16/2018 Commands changed to JSON format.  
          Power button added, along with on() and off() commands.
