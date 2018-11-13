@@ -9,7 +9,7 @@ Please remember, starting with Version 2.0 a different communication protocal wi
 
 There is an optional SmartApp to associate momentary buttons with player functions.  See separate documentation for usage.
 
-There is a new options SmartApp to make player installation easier.  It eliminates the need to find and enter player MAC addresses. The manual method in step 4 below still works.
+There is a new optional SmartApp to make player installation easier.  It eliminates the need to find and enter player MAC addresses. The manual method in step 4 below still works.
 
 #### Current version: (See notes below for details)
 
