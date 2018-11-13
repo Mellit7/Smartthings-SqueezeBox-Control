@@ -1,7 +1,7 @@
 /**
  *  Squeeze Music Server
  *
- *  Version 2.0 August 16, 2018
+ *  Version 2.1 November 13, 2018
  *
  *  Written by Melinda Little 2018
  *
@@ -51,10 +51,12 @@ metadata {
 		capability "Media Controller"
         
         command "makeLANcall", ["string", "string", "string"]
+        command "buildPlayer", ["string", "string"]
  
         attribute "numPlayers", "string"
         attribute "playerCount", "number"
         attribute "buildingPlayer", "string"
+        attribute "playerList", "string"
 	}
 
 	tiles(scale: 2) {
@@ -244,7 +246,7 @@ def buildPlayer(playerMAC, playerName) {
 	log.debug "New Player:  ${playerMAC} ${playerName}"
                 
 	addChildDevice("Mellit7", "Squeeze Music Player", playerMAC, null,
-                            [completedSetup: true, isComponent: false, name: playerName])
+                            [completedSetup: true, isComponent: false, name: playerName, label: playerName])
 	
 }
 
@@ -449,6 +451,7 @@ def parseJSONstatus(bodyJSON) {
 //Update number of players on Server    
 	def children = getChildDevices()
     def numChildren = children.size()
+    if (numChildren > 0) {sendEvent(name: "playerList", value: children.deviceNetworkId.join(","))} else {sendEvent(name: "playerList", value: "")}
     def playersLabel = "Number of Players: ${numChildren}"
     sendEvent(name: "numPlayers", value: playersLabel)
     sendEvent(name: "playerCount", value: numChildren)

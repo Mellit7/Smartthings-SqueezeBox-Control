@@ -1,7 +1,7 @@
 /**
  *  Squeeze Music Player
  *
- *  Version 2.0 August 16, 2018 
+ *  Version 2.1 November 13, 2018 
  *
  *  Written by Melinda Little 2018
  *
@@ -28,7 +28,7 @@
                 "Aditi(en-IN hi-IN)","Raveena(en-IN)","Geraint(en-GB-WLS)","Mathieu(fr-FR)","Celine(fr-FR)","Léa(fr-FR)","Chantal (fr-CA)","Hans(de-DE)","Marlene(de-DE)","Vicki(de-DE)",
                 "Karl(is-IS)","Dora(is-IS)","Giorgio(it-IT)","Carla(it-IT)","Takumi(ja-JP)","Mizuki(ja-JP)","Seoyeon(ko-KR)","Liv(nb-NO)","Jacek(pl-PL)","Jan(pl-PL)","Ewa(pl-PL)","Maja(pl-PL)",
                 "Ricardo (pt-BR)","Vitoria (pt-BR)","Cristiano(pt-PT)","Ines(pt-PT)","Carmen(ro-RO)","Maxim(ru-RU)","Tatyana(ru-RU)","Enrique(es-ES)","Conchita(es-ES)","Astrid(sv-SE)",
-                "Filiz(tr-TR)","Gwyneth(cy-GB)"], description: "Select voice to use for speech. Defaults to Salli", required: no
+                "Filiz(tr-TR)","Gwyneth(cy-GB)","Zhiyu(cmn-CN)"], description: "Select voice to use for speech. Defaults to Salli", required: no
     input name: "speechVolume", type: "string", title: "Volume for Speech", description: "Desired volume for Speech Requests", required: no
 	input name: "shuffleOff", type: "enum", title: "Turn off Shuffle/Repeat", options: ["shuffle", "repeat", "both", "none"], description: "Turn off shuffle and/or repeat with stop command? Defaults to both", required: no
     input name: "squeezeLite", type: "enum", title: "SqueezeLite", options: ["yes", "no"], description: "Is this a SqueezeLite player? (not Chromecast)? Defaults to no", required: no
@@ -316,15 +316,17 @@ def setPlaybackRepeatMode(mode) {
 }
 
 
-def speak(msg) {
+def speak(msg, inVoice=null) {
 
   	def playerId = device.deviceNetworkId
-   	def sound = getSound(msg)
-    def playURI = sound.uri.replaceFirst("^https","http")
+   	def sound = getSound(msg, inVoice)
+    def playURI = sound.uri?.replaceFirst("^https","http")
     def durationDelay = Math.round((sound.duration.toInteger() * 1000) + 5000)
 	def volume = speechVolume ?: null
 //	log.debug playURI
-    def params = "\"status\",\"-\",1,\"tags:al\",\"action:speak\",\"playURI: ${playURI}\",\"durationDelay:${durationDelay}\",\"volume:${volume}\""
+    def params = statusCommand
+    params = "${params},\"action:speak\",\"playURI: ${playURI}\",\"durationDelay:${durationDelay}\",\"volume:${volume}\""
+//	log.debug params
 	parent.makeJSONcall(params, playerId, "JSONhandler")
  
 }
@@ -342,8 +344,9 @@ def playTrackAndResume(uri, duration, volume=null) {
   	def playerId = device.deviceNetworkId
     def playURI = uri.replaceFirst("^https","http")
    	def durationDelay = Math.round((duration.toInteger() * 1000) + 5000)
-    
-    def params = "\"status\",\"-\",1,\"tags:al\",\"action:resume\",\"playURI: ${playURI}\",\"durationDelay:${durationDelay}\",\"volume:${volume}\""
+    def params = statusCommand
+    params = "${params},\"action:resume\",\"playURI: ${playURI}\",\"durationDelay:${durationDelay}\",\"volume:${volume}\""    
+//    def params = "\"status\",\"-\",1,\"tags:al\",\"action:resume\",\"playURI: ${playURI}\",\"durationDelay:${durationDelay}\",\"volume:${volume}\""
 	parent.makeJSONcall(params, playerId, "JSONhandler")
 
 }
@@ -353,8 +356,9 @@ def playTrackAndRestore(uri, duration, volume=null) {
   	def playerId = device.deviceNetworkId
 	def playURI = uri.replaceFirst("^https","http")
     def durationDelay = Math.round((duration.toInteger() * 1000) + 5000)    
-    
-    def params = "\"status\",\"-\",1,\"tags:al\",\"action:restore\",\"playURI: ${playURI}\",\"durationDelay:${durationDelay}\",\"volume:${volume}\""
+    def params = statusCommand
+    params = "${params},\"action:restore\",\"playURI: ${playURI}\",\"durationDelay:${durationDelay}\",\"volume:${volume}\""     
+//    def params = "\"status\",\"-\",1,\"tags:al\",\"action:restore\",\"playURI: ${playURI}\",\"durationDelay:${durationDelay}\",\"volume:${volume}\""
 	parent.makeJSONcall(params, playerId, "JSONhandler")
 
 }
@@ -456,19 +460,33 @@ def restorePlayer(actions, playerId, currentRepeat, currentVolume) {
 	return actions
 }
 
-def getSound(msg) {
+def getSound(msg, inVoice) {
 
-	def myVoice = speechVoice ?: "Salli(en-us)"
+	def myVoice = inVoice ?: speechVoice ?: "Salli(en-us)"
     def splitVoice = myVoice.split("\\(")
 	myVoice = splitVoice[0]
 
-    
+    def sound = [:]
     if (!msg) {msg = "You have requested a text to speech event, but have failed to supply the appropriate message." }
-    def sound = textToSpeech(msg, myVoice)
+    try {
+    	sound = textToSpeech(msg, myVoice)
+    }
+    catch (e) {
+    	sound.uri = "http://s3.amazonaws.com/smartapp-media/sonos/bell1.mp3"
+        sound.duration = 10
+    	log.error "An error occurred in the text to speech request:\n $e"
+	}
 //    log.debug "SOUND URI ${sound.uri}"
     if (sound.duration.toInteger() < 5  && squeezeLite == "yes") {
 		msg = "The text you entered is too short for the SqueezeLite Player, please enter a longer phrase"
-        sound = textToSpeech(msg, myVoice)
+        try {
+        	sound = textToSpeech(msg, myVoice)
+        }
+        catch (e) {
+    		sound.uri = "http://s3.amazonaws.com/smartapp-media/sonos/bell1.mp3"
+        	sound.duration = 10
+    		log.error "An error occurred in the text to speech request:\n $e"
+		}
     }
     
     return sound
