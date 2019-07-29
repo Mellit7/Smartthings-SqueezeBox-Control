@@ -2,7 +2,7 @@
  *
  *  Squeezebox Button Manager
  *
- *  Version 1.0
+ *  Version 1.1 Addeed buttons for volume control
  *
  *  Author: Melinda Little 2018
  *
@@ -57,6 +57,14 @@ preferences {
 	section("Select the button to be used to load Preset 3") {
 		input "button3Control", "capability.Momentary", multiple: false, required: false, title: "Preset 3 Control Button?"
 	}
+    
+    section("Select the button to be used to increase volumne") {
+		input "volUpControl", "capability.Momentary", multiple: false, required: false, title: "Volume Up Button?"
+	}
+    
+    section("Select the button to be used to decrease volumne") {
+		input "volDownControl", "capability.Momentary", multiple: false, required: false, title: "Volume Down Button?"
+	}
 }
 
 def installed()
@@ -103,6 +111,18 @@ def button3SwitchOnHandler(evt) {
 	thePlayer.button3()
 }
 
+def volUpControlOnHandler(evt) {
+	log.debug "Volumne Up Switch On Handler: $evt"
+    def params = "\"mixer\",\"volume\",\"+2\""
+	thePlayer.custom(params)
+}
+
+def volDownControlOnHandler(evt) {
+	log.debug "Volumne Up Switch On Handler: $evt"
+    def params = "\"mixer\",\"volume\",\"-2\""
+	thePlayer.custom(params)
+}
+
 def setupsubscriptions() {
 	log.debug "SUBSCRIBE ${button1Control}"
 	if (playControl) {subscribe(playControl, "switch.on", playSwitchOnHandler)}
@@ -111,5 +131,7 @@ def setupsubscriptions() {
    	if (button1Control) {subscribe(button1Control, "switch.on", button1SwitchOnHandler)}
    	if (button2Control) {subscribe(button2Control, "switch.on", button2SwitchOnHandler)}
    	if (button3Control) {subscribe(button3Control, "switch.on", button3SwitchOnHandler)}
+    if (volUpControl) {subscribe(volUpControl, "switch.on", volUpControlOnHandler)}
+    if (volDownControl) {subscribe(volDownControl, "switch.on", volDownControlOnHandler)}
 
 }
