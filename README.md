@@ -88,6 +88,8 @@ By default, the stop command includes a turn off shuffle command as well.  This 
 
 **Player**
 
+**2.2** 12/16/2019 Updates to bring players online in new app
+
 **2.1**  11/13/2018 Added new speech voice supported by Polly. New parameter on speak command to allow one time override of voice to use.  Existing speak commands do not need changing.  Using voice parameter does not change any defaults for other instances.  An error in the speak command will now play a "ding ding" type sound. Check the error logging for details about the error.  This will most commonly be a bad voice input.
 
 **2.0**  08/16/2018 Commands changed to JSON format.  
