@@ -1,7 +1,7 @@
 /**
  *  Squeeze Music Player
  *
- *  Version 2.1 November 13, 2018 
+ *  Version 2.2 December 16, 2019
  *
  *  Written by Melinda Little 2018
  *
@@ -23,21 +23,22 @@
  
  preferences {
  
-	input name: "speechVoice", type: "enum", title: "Voice for Speech", options: ["Ivy(en-us)","Joanna(en-us)","Joey(en-us)","Justin(en-us)","Kendra(en-us)","Kimberly(en-us)","Salli(en-us)",
-                "Amy(en-gb)","Brian(en-gb)","Emma(en-gb)","Miguel(es-us)","Penelope(es-us)","Ruben(nl-NL)","Lotte(nl-NL)","Mads(da-DK)","Naja(da-DK)","Russell(en-AU)","Nicole(en-AU)",
-                "Aditi(en-IN hi-IN)","Raveena(en-IN)","Geraint(en-GB-WLS)","Mathieu(fr-FR)","Celine(fr-FR)","Léa(fr-FR)","Chantal (fr-CA)","Hans(de-DE)","Marlene(de-DE)","Vicki(de-DE)",
-                "Karl(is-IS)","Dora(is-IS)","Giorgio(it-IT)","Carla(it-IT)","Takumi(ja-JP)","Mizuki(ja-JP)","Seoyeon(ko-KR)","Liv(nb-NO)","Jacek(pl-PL)","Jan(pl-PL)","Ewa(pl-PL)","Maja(pl-PL)",
-                "Ricardo (pt-BR)","Vitoria (pt-BR)","Cristiano(pt-PT)","Ines(pt-PT)","Carmen(ro-RO)","Maxim(ru-RU)","Tatyana(ru-RU)","Enrique(es-ES)","Conchita(es-ES)","Astrid(sv-SE)",
-                "Filiz(tr-TR)","Gwyneth(cy-GB)","Zhiyu(cmn-CN)"], description: "Select voice to use for speech. Defaults to Salli", required: no
+	input name: "speechVoice", type: "enum", title: "Voice for Speech", options: availableVoices(), description: "Select voice to use for speech. Defaults to Salli", 
+    	defaultValue: "Salli(en-us)" , required: no
     input name: "speechVolume", type: "string", title: "Volume for Speech", description: "Desired volume for Speech Requests", required: no
-	input name: "shuffleOff", type: "enum", title: "Turn off Shuffle/Repeat", options: ["shuffle", "repeat", "both", "none"], description: "Turn off shuffle and/or repeat with stop command? Defaults to both", required: no
-    input name: "squeezeLite", type: "enum", title: "SqueezeLite", options: ["yes", "no"], description: "Is this a SqueezeLite player? (not Chromecast)? Defaults to no", required: no
+	input name: "shuffleOff", type: "enum", title: "Turn off Shuffle/Repeat", options: ["shuffle", "repeat", "both", "none"], description: "Turn off shuffle and/or repeat with stop command? Defaults to both", 
+    	defaultValue: "both" ,required: no
+    input name: "squeezeLite", type: "enum", title: "SqueezeLite", options: ["yes", "no"], description: "Is this a SqueezeLite player? (not Chromecast)? Defaults to no", 
+    	defaultValue: "no" ,required: no
     input name: "button1Command", type: "string", title: "Preset 1 Command", description: "Server command for Preset 1", required: no
-    input name: "button1Extra", type: "enum", title: "Preset 1 Extra Commands", options: ["shuffle", "repeat", "both", "none"], description: "Add shuffle and/or repeat to Preset 1 Command? Defaults to none", required: no
+    input name: "button1Extra", type: "enum", title: "Preset 1 Extra Commands", options: ["shuffle", "repeat", "both", "none"], description: "Add shuffle and/or repeat to Preset 1 Command? Defaults to none", 
+    	defaultValue: "none" ,required: no
 	input name: "button2Command", type: "string", title: "Preset 2 Command", description: "Server command for Preset 2", required: no  
-    input name: "button2Extra", type: "enum", title: "Preset 2 Extra Commands", options: ["shuffle", "repeat", "both", "none"], description: "Add shuffle and/or repeat to Preset 2 Command? Defaults to none", required: no
+    input name: "button2Extra", type: "enum", title: "Preset 2 Extra Commands", options: ["shuffle", "repeat", "both", "none"], description: "Add shuffle and/or repeat to Preset 2 Command? Defaults to none", 
+    	defaultValue: "none" ,required: no
 	input name: "button3Command", type: "string", title: "Preset 3 Command", description: "Server command for Preset 3", required: no
-    input name: "button3Extra", type: "enum", title: "Preset 3 Extra Commands", options: ["shuffle", "repeat", "both", "none"], description: "Add shuffle and/or repeat to Preset 3 Command? Defaults to none", required: no
+    input name: "button3Extra", type: "enum", title: "Preset 3 Extra Commands", options: ["shuffle", "repeat", "both", "none"], description: "Add shuffle and/or repeat to Preset 3 Command? Defaults to none", 
+    	defaultValue: "none" , required: no
 
 }
 
@@ -53,9 +54,15 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 		capability "Music Player"
+        capability "Media Playback"
         capability "Media Playback Shuffle"
         capability "Media Playback Repeat"
         capability "Speech Synthesis"
+        capability "Audio Volume"
+        capability "Audio Mute"
+        capability "Audio Track Data"
+        capability "Audio Notification"
+        capability "Health Check"
         
 	    attribute "buttonOne", "string"
 	    attribute "buttonTwo", "string"
@@ -154,6 +161,7 @@ def installed() {
 	sendEvent(name: "status", value: "stopped")
 	sendEvent(name: "trackDescription", value: "Stopped")
 
+    setHealth()
 	setTimer()
 
 }
@@ -161,7 +169,7 @@ def installed() {
 def updated() {
 	
     unschedule()
-
+	setHealth()
     setTimer()
 
 }
@@ -382,35 +390,38 @@ def refresh() {
 	def playerId = device.deviceNetworkId
     def params = statusCommand
 	parent.makeJSONcall(params, playerId, "JSONhandler")
-    
+   
 }
 
 def updatePlayer(playerInfo) {
 
 //	log.debug "Inside player update"
 
+	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
 	switch(playerInfo.playerStatus) {
     	case "play" :
         	log.debug "REPORTED PLAYING"
 
             	sendEvent(name: "status", value: "playing")
-
+				setPlaybackStatus(playerInfo.playerStatus)
         	break
         case "pause" :
         	log.debug "REPORTED PAUSED"
 
             	sendEvent(name: "status", value: "paused")
-
+				setPlaybackStatus(playerInfo.playerStatus)
         	break
         case ["stop", null] :
         	log.debug "REPORTED STOPPED OR OFF"
 
             	sendEvent(name: "status", value: "stopped")
-
+				setPlaybackStatus(playerInfo.playerStatus)
         	break
         default:
     		log.debug "UNKNOWN PLAYER STATUS"
     }
+    
+    
     log.debug "PLAYER STATUS: ${device.currentValue("status")}"
 //    log.debug "TRACK DESC ${playerInfo.longInfo}"
     sendEvent(name: "trackDescription", value: playerInfo.longInfo)
@@ -583,4 +594,32 @@ def button3() {
 
 def getStatusCommand() {
 	return '"status","-",1,"tags:al"'
+}
+
+def setPlaybackStatus(status) {
+
+   	sendEvent(name: "playbackStatus", value: status)
+
+}
+
+//  Device Health related code
+
+def setHealth() {
+	log.debug device.hub.id
+	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+	sendEvent(name: "healthStatus", value: "online")
+	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\",  \"hubHardwareId\": \"${device.hub.hardwareID}\"}", displayed: false)
+
+}
+ // ************
+ 
+private availableVoices() {
+
+["Ivy(en-us)","Joanna(en-us)","Joey(en-us)","Justin(en-us)","Kendra(en-us)","Kimberly(en-us)","Salli(en-us)",
+                "Amy(en-gb)","Brian(en-gb)","Emma(en-gb)","Miguel(es-us)","Penelope(es-us)","Ruben(nl-NL)","Lotte(nl-NL)","Mads(da-DK)","Naja(da-DK)","Russell(en-AU)","Nicole(en-AU)",
+                "Aditi(en-IN hi-IN)","Raveena(en-IN)","Geraint(en-GB-WLS)","Mathieu(fr-FR)","Celine(fr-FR)","Léa(fr-FR)","Chantal (fr-CA)","Hans(de-DE)","Marlene(de-DE)","Vicki(de-DE)",
+                "Karl(is-IS)","Dora(is-IS)","Giorgio(it-IT)","Carla(it-IT)","Takumi(ja-JP)","Mizuki(ja-JP)","Seoyeon(ko-KR)","Liv(nb-NO)","Jacek(pl-PL)","Jan(pl-PL)","Ewa(pl-PL)","Maja(pl-PL)",
+                "Ricardo (pt-BR)","Vitoria (pt-BR)","Cristiano(pt-PT)","Ines(pt-PT)","Carmen(ro-RO)","Maxim(ru-RU)","Tatyana(ru-RU)","Enrique(es-ES)","Conchita(es-ES)","Astrid(sv-SE)",
+                "Filiz(tr-TR)","Gwyneth(cy-GB)","Zhiyu(cmn-CN)"]
+
 }
