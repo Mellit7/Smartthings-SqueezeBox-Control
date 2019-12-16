@@ -3,6 +3,8 @@ Smartthings Control for Logitech Media Server and Players (Squeezebox)
 
 These device handlers provides Smartthings control of multiple Logitech Media Server (Squeezebox) players through a single server interface.
 
+**UPDATE** Version 2.2 has changes to bring players online in new app.  Update the Player DTH and then resave settings/preferences in old app.  If device does not come on line in new app, check IDE to make sure Hub is properly populated for player device.  Early adopters may have blank/null Hub assignments.   After updating hub, resave settings again.
+
 **NEW VERSION**  Version 2.1 has been uploaded. It contains some minor improvements and a Player Install SmartApp has been added to simplify player installation.
 
 Please remember, starting with Version 2.0 a different communication protocal with LMS is used.  You do not need to reinstall devices, only update both Device Handlers.  However, **preset buttons have been converted as well, so they will need to be changed**.  See notes in player setup for details. 
