@@ -263,6 +263,35 @@ def setLevel(level) {
 
 }
 
+def setVolume(volume) {
+
+	setLevel(volume)
+
+}
+
+def volumeUp() {
+
+	def playerId = device.deviceNetworkId
+    def params = "\"mixer\",\"volume\",\"+2\""
+	parent.makeJSONcall(params, playerId, "JSONhandler")
+
+}
+
+def volumeDown() {
+
+	def playerId = device.deviceNetworkId
+    def params = "\"mixer\",\"volume\",\"-2\""
+	parent.makeJSONcall(params, playerId, "JSONhandler")
+
+}
+
+def setMute(muteState) {
+
+	if (muteStated == "muted") {mute()}
+	if (muteStated == "unmuted") {unmute()}
+
+}
+
 def setPlaybackShuffle(controlInput) {
 
 //	log.debug "SHUFFLE CONTROL INPUT ${controlInput}"
@@ -415,7 +444,7 @@ def updatePlayer(playerInfo) {
         	log.debug "REPORTED STOPPED OR OFF"
 
             	sendEvent(name: "status", value: "stopped")
-				setPlaybackStatus(playerInfo.playerStatus)
+				setPlaybackStatus("stop")
         	break
         default:
     		log.debug "UNKNOWN PLAYER STATUS"
@@ -428,6 +457,7 @@ def updatePlayer(playerInfo) {
     
     if (playerInfo.playerVol != null) {
     	sendEvent(name: "level", value: playerInfo.playerVol)
+        sendEvent(name: "volume", value: playerInfo.playerVol)
 		if (playerInfo.playerVol >= 0) {
            	sendEvent(name: "mute", value: "unmuted")
         } else {
@@ -605,7 +635,7 @@ def setPlaybackStatus(status) {
 //  Device Health related code
 
 def setHealth() {
-	log.debug device.hub.id
+//	log.debug device.hub.id
 	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
 	sendEvent(name: "healthStatus", value: "online")
 	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\",  \"hubHardwareId\": \"${device.hub.hardwareID}\"}", displayed: false)
