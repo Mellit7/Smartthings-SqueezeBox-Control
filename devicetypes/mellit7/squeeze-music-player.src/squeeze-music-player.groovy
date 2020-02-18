@@ -1,7 +1,7 @@
 /**
  *  Squeeze Music Player
  *
- *  Version 2.2 December 16, 2019
+ *  Version 2.3 February 18, 2020
  *
  *  Written by Melinda Little 2018
  *
