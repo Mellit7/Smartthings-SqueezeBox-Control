@@ -3,6 +3,8 @@ Smartthings Control for Logitech Media Server and Players (Squeezebox)
 
 These device handlers provides Smartthings control of multiple Logitech Media Server (Squeezebox) players through a single server interface.
 
+**UPDATE** Version 2.3 of player is a small incremental update to support volume and mute capabilites in new ST app.  Adds new player functions as documented below.  Otherwise, there should be no obvious changes.
+
 **UPDATE** Version 2.2 has changes to bring players online in new app.  Update the Player DTH and then resave settings/preferences in old app.  If device does not come on line in new app, check IDE to make sure Hub is properly populated for player device.  Early adopters may have blank/null Hub assignments.   After updating hub, resave settings again.
 
 **NEW VERSION**  Version 2.1 has been uploaded. It contains some minor improvements and a Player Install SmartApp has been added to simplify player installation.
@@ -64,12 +66,14 @@ By default, the stop command includes a turn off shuffle command as well.  This 
 - playTrack(uri) string uri is a track path valid in LMS
 - def playTrackAndResume(uri, duration, volume)  string uri is a track path valid in LMS
 - def playTrackAndRestore(uri, duration, volume) string uri is a track path valid in LMS
+- setVolume(volume) functional equivalent to setLevel
+- volumeUp() increases volume by 2
+- volumeDown() decreases volume by 2
+- setMute(muteState) mutes or unmutes player, combines mute and unmute into one function, valid values are "muted" and "unmuted"
 
 
 
 ### To Do Wish List
-
-- [X] Implement power on/off button
 
 
 ### Versions
@@ -87,6 +91,8 @@ By default, the stop command includes a turn off shuffle command as well.  This 
 **1.0**  05/24/2018 Initial release
 
 **Player**
+
+**2.3** 2/18/2020 updates to add volume and mute capability support for new app
 
 **2.2** 12/16/2019 Updates to bring players online in new app
 
