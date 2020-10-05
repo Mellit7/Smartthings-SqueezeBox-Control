@@ -42,19 +42,21 @@ metadata {
 	definition (
 		name: "Squeeze Music Server",
 		namespace: "Mellit7",
-		author: "Melinda Little") {
+		author: "Melinda Little", mnmn: "SmartThingsCommunity", vid: "e6e4fce5-1753-3b59-890c-53d5352d8228", ocfDeviceType: 'oic.d.networkaudio') {
 
-		capability "Actuator"
+//		capability "Actuator"
 		capability "Switch"
 		capability "Refresh"
-		capability "Sensor"
-		capability "Media Controller"
+//		capability "Sensor"
+//		capability "Media Controller"
+        capability "wanderwater41919.playerCount"
+        capability "wanderwater41919.serverActivity"
         
         command "makeLANcall", ["string", "string", "string"]
         command "buildPlayer", ["string", "string"]
  
         attribute "numPlayers", "string"
-        attribute "playerCount", "number"
+//        attribute "playerCount", "number"
         attribute "buildingPlayer", "string"
         attribute "playerList", "string"
 	}
@@ -131,7 +133,7 @@ def makeLANcall(path_cmd, playerMAC, callHandler) {
 				)]
 	sendHubCommand(result)
 
-	log.debug result
+//	log.debug result
 
 }
 
@@ -153,16 +155,40 @@ def makeJSONcall(params, playerMAC, callHandler) {
 				)]
 	sendHubCommand(result)
 
-	log.debug result
+//	log.debug result
 
 }
 
 def refresh(playerMAC) {
 
 	def params = statusCommand
-    log.debug "REFRESH PARAMS ${params}"
+//    log.debug "REFRESH PARAMS ${params}"
 	makeJSONcall(params, playerMAC, "JSONhandler")
 
+}
+
+def loadPlaylists() {
+
+	def params = '"playlists",0,25'
+	makeJSONcall(params, "-", "listHandler")
+
+}
+
+def listHandler(msg) {
+
+    def body = msg.body
+    def bodyJSON = new groovy.json.JsonSlurper().parseText(body)
+//   	log.debug " ***IN listHandler ${bodyJSON}"
+    def favsList = []
+    if (bodyJSON.result.count.toInteger() > 0) {
+    	for (int i = 0; i < bodyJSON.result.count.toInteger();i++) {
+	    	favsList[i] = "{\"id\":\"${bodyJSON.result.playlists_loop[i].id}\",\"name\":\"${bodyJSON.result.playlists_loop[i].playlist}\"}"
+    	}
+    }
+    def children = getChildDevices()
+    for (int i = 0; i < children.size();i++) {
+	    children[i].playlists(favsList)
+	}
 }
 
 def playerBuild(index) {
@@ -253,9 +279,10 @@ def buildPlayer(playerMAC, playerName) {
 def initialize() {
 
     def hexID = setNetworkID()
-	def displayText = "Logitech Media Server at ${internal_ip}:${internal_port}\n${hexID}"
+	def displayText = "${internal_ip}:${internal_port}\n${hexID}"
 	sendEvent(name: "currentActivity", value: displayText)
-
+	loadPlaylists()
+    runEvery15Minutes(loadPlaylists)
     playerBuild(1)
 
 }
@@ -386,14 +413,21 @@ def parseJSONstatus(bodyJSON) {
     def trackName
     def album
     def artist
+    def coverId
     if (bodyJSON.result.playlist_loop) {
-    	trackName = bodyJSON.result.playlist_loop[0].title ?: "Nothing"
-     	album = bodyJSON.result.playlist_loop[0].album ?: null
-       	artist = bodyJSON.result.playlist_loop[0].artist ?: null
+    	trackName = bodyJSON.result.playlist_loop[0]?.title ?: "Nothing"
+     	album = bodyJSON.result.playlist_loop[0]?.album ?: bodyJSON.result.playlist_loop[0]?.remote_title ?: null
+       	artist = bodyJSON.result.playlist_loop[0]?.artist ?: null
+        coverId = bodyJSON.result.playlist_loop[0]?.coverid ?: bodyJSON.result.playlist_loop[0].id ?: null
+        playerInfo.type = bodyJSON.result?.playlist_loop[0]?.type ?: "LMS"
+        playerInfo.artURL = bodyJSON.result?.playlist_loop[0]?.artwork_url ?: null
     } else {
-    	trackName = "Nothing"
-        album = null
-        artist = null
+    	trackName = bodyJSON.result?.remoteMeta?.title ?: "Nothing"
+        album = bodyJSON.result?.remoteMeta?.album ?: bodyJSON.result?.remoteMeta?.remote_title ?: null
+        artist = bodyJSON.result?.remoteMeta?.artist ?: null
+        coverId = bodyJSON.result?.remoteMeta?.coverid ?: bodyJSON.result?.remoteMeta?.id ?: null
+        playerInfo.type = "UNKNOWN"
+        playerInfo.artURL = null
     }
     def longInfo    
  	if (album && trackName) {
@@ -419,6 +453,17 @@ def parseJSONstatus(bodyJSON) {
 //    log.debug "Track Description: ${longInfo}"
 
 	playerInfo.longInfo = longInfo
+
+//  *** New for Track Data
+
+	playerInfo.album = album
+   	playerInfo.artist = artist
+	playerInfo.trackName = trackName    
+	playerInfo.coverId = coverId
+    playerInfo.ip = internal_ip
+    playerInfo.port = internal_port ?: 9000
+
+//  *** End new Track Data
     
     playerInfo.repeat =  bodyJSON.result['playlist repeat']
     playerInfo.shuffle =  bodyJSON.result['playlist shuffle']
@@ -502,5 +547,5 @@ def multiHubAction(actions) {  //Process multiple hub actions as a group
 }
 
 def getStatusCommand() {
-	return '"status","-",1,"tags:al"'
+	return '"status","-",1,"tags:alcKoN"'
 }

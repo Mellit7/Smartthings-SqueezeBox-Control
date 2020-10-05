@@ -47,7 +47,8 @@ metadata {
 	definition (
 		name: "Squeeze Music Player",
 		namespace: "Mellit7",
-		author: "Melinda Little") {
+		author: "Melinda Little" ,
+        mnmn:"SmartThingsCommunity", vid: "5eb6ab61-8a78-3d85-8a86-535cb7460cea", ocfDeviceType: 'oic.d.networkaudio') {
 
 		capability "Actuator"
 		capability "Switch"
@@ -55,6 +56,8 @@ metadata {
 		capability "Sensor"
 		capability "Music Player"
         capability "Media Playback"
+        capability "Media Presets"
+        capability "Media Track Control"        
         capability "Media Playback Shuffle"
         capability "Media Playback Repeat"
         capability "Speech Synthesis"
@@ -70,6 +73,7 @@ metadata {
         attribute "playlistLength", "number"
 
         command "updatePlayer", ["string"]
+        command "playlists", ["string"]        
         command "custom", ["string"]
         command "setPlaybackShuffle", ["string" ]
         command "playTrackAndResume", ["string", "string", "string"]
@@ -116,18 +120,17 @@ metadata {
 		}
         
 
-        
         standardTile("shuffle", "playbackShuffle", width: 2, height: 2, canChangeIcon: true) {
-			state "0", label: 'Shuffle', action: "setPlaybackShuffle",  backgroundColor: "#dddddd", nextState: "1"
-			state "1", label: 'Shuffle\nSong', action: "setPlaybackShuffle",  backgroundColor: "#79b821", nextState: "2"
-            state "2", label: 'Shuffle\nAlbum', action: "setPlaybackShuffle",  backgroundColor: "#5fd5f9", nextState: "0"
+			state "disabled", label: 'Shuffle\nOff', action: "setPlaybackShuffle",  backgroundColor: "#dddddd", nextState: "enabled"
+//			state "1", label: 'Shuffle\nSong', action: "setPlaybackShuffle",  backgroundColor: "#79b821", nextState: "2"
+            state "enabled", label: 'Shuffle\nOn', action: "setPlaybackShuffle",  backgroundColor: "#5fd5f9", nextState: "disabled"
 		}
         
         standardTile("repeat", "playbackRepeatMode", width: 2, height: 2, canChangeIcon: true) {
-			state "0", label: 'Repeat\nOff', action: "setPlaybackRepeatMode", backgroundColor: "#dddddd", nextState: "1"
-			state "1", label: 'Repeat\nSong', action: "setPlaybackRepeatMode", backgroundColor: "#79b821", nextState: "2"
-            state "2", label: 'Repeat\nPlaylist', action: "setPlaybackRepeatMode",  backgroundColor: "#5fd5f9", nextState: "0"
-		}  
+			state "off", label: 'Repeat\nOff', action: "setPlaybackRepeatMode", backgroundColor: "#dddddd", nextState: "one"
+			state "one", label: 'Repeat\nSong', action: "setPlaybackRepeatMode", backgroundColor: "#79b821", nextState: "all"
+            state "all", label: 'Repeat\nPlaylist', action: "setPlaybackRepeatMode",  backgroundColor: "#5fd5f9", nextState: "off"
+		} 
 
 		standardTile("button1", "buttonOne", width: 2, height: 2, canChangeIcon: true) {
 			state "off", label: 'Preset\n1', action: "button1", backgroundColor: "#dddddd", nextState: "on"
@@ -163,6 +166,7 @@ def installed() {
 
     setHealth()
 	setTimer()
+    initialize()
 
 }
 
@@ -171,7 +175,14 @@ def updated() {
     unschedule()
 	setHealth()
     setTimer()
+    initialize()
 
+}
+
+def initialize() {
+	sendEvent(name: "supportedPlaybackCommands", value: ["pause","play","stop","fastForward","rewind"], displayed: false)
+//   	sendEvent(name: "supportedPlaybackCommands", value: ["pause","play","stop"], displayed: false)
+    sendEvent(name: "supportedTrackControlCommands", value: ["previousTrack","nextTrack"], displayed: false)
 }
 
 def parse(description) {
@@ -230,6 +241,18 @@ def previousTrack() {
 
 }
 
+def rewind() {
+
+	previousTrack()
+
+}
+
+def fastForward () {
+	log.debug "IN FASTFORWARD"
+	nextTrack()
+
+}
+
 def nextTrack() {
 
   	def playerId = device.deviceNetworkId
@@ -243,7 +266,7 @@ def mute() {
 	def playerId = device.deviceNetworkId
    	def params = '"mixer","muting",1'
 	parent.makeJSONcall(params, playerId, "JSONhandler")
-   	sendEvent(name: "mute", value: "muted")
+   	sendEvent(name: "mute", value: "muted", displayed: false)
 }
 
 def unmute() {
@@ -251,7 +274,7 @@ def unmute() {
 	def playerId = device.deviceNetworkId 
    	def params = '"mixer","muting",0'
 	parent.makeJSONcall(params, playerId, "JSONhandler")
-   	sendEvent(name: "mute", value: "unmuted")
+   	sendEvent(name: "mute", value: "unmuted", displayed: false)
 
 }
 
@@ -294,28 +317,30 @@ def setMute(muteState) {
 
 def setPlaybackShuffle(controlInput) {
 
-//	log.debug "SHUFFLE CONTROL INPUT ${controlInput}"
+	log.debug "SHUFFLE CONTROL INPUT ${controlInput}"
     
 	def controlValue
     if (controlInput != null) {
     	controlValue = controlInput
+        if (controlInput == "enabled") {controlValue = "2"}
+        if (controlInput == "disabled") {controlValue = "0"}
     }
     else {
     	switch (device.currentValue("playbackShuffle")) {
- 		  	case "0" :
-            	controlValue = "1"
-        		break        
- 		  	case "1" :
-            	controlValue = "2"
-        		break         
- 		  	case "2" :
+ 		  	case "enabled" :
             	controlValue = "0"
+        		break        
+/* 		  	case "1" :
+            	controlValue = "2"
+        		break  */       
+ 		  	case "disabled" :
+            	controlValue = "2"
         		break         
 	        default:
     			controlValue = "0"       
         }
     }
-//    log.debug "SHUFFLE VALUE : ${controlValue}  ${device.currentValue("playbackShuffle")}"
+    log.debug "SHUFFLE VALUE : ${controlValue}  ${device.currentValue("playbackShuffle")}"
   	def playerId = device.deviceNetworkId
    	def params = "\"playlist\",\"shuffle\",${controlValue}"
 	parent.makeJSONcall(params, playerId, "JSONhandler")
@@ -327,25 +352,31 @@ def setPlaybackRepeatMode(mode) {
 
     def controlValue
     if (mode != null) {
-    	controlValue = mode
+    	def splitMode = mode.split("_")
+        def testMode
+        if (splitMode.size() > 1) {testMode = splitMode[1]}	else {testMode = mode}
+        controlValue = testMode
+        if (testMode == "off") {controlValue = "0"}
+        if (testMode == "one") {controlValue = "1"}
+        if (testMode == "all") {controlValue = "2"}
     }
     else {
-//	   	log.debug "REPEAT SWITCH REPORTS: ${device.currentValue("playbackRepeatMode")}"
+	   	log.debug "REPEAT SWITCH REPORTS: ${device.currentValue("playbackRepeatMode")}"
     	switch (device.currentValue("playbackRepeatMode")) {
- 		  	case "0" :
+ 		  	case "off" :
             	controlValue = "1"
         		break        
- 		  	case "1" :
+ 		  	case "one" :
             	controlValue = "2"
         		break         
- 		  	case "2" :
+ 		  	case "all" :
             	controlValue = "0"
         		break         
 	        default:
     			controlValue = "0"       
         }
     }
-
+	log.debug "REPEAT VALUE: ${controlValue}"
 	def playerId = device.deviceNetworkId
    	def params = "\"playlist\",\"repeat\",${controlValue}"
    	parent.makeJSONcall(params, playerId, "JSONhandler")
@@ -443,7 +474,8 @@ def updatePlayer(playerInfo) {
         case ["stop", null] :
         	log.debug "REPORTED STOPPED OR OFF"
 
-            	sendEvent(name: "status", value: "stopped")
+            	sendEvent(name: "status", value: "paused")
+//            	sendEvent(name: "status", value: "stopped")
 				setPlaybackStatus("stop")
         	break
         default:
@@ -453,36 +485,85 @@ def updatePlayer(playerInfo) {
     
     log.debug "PLAYER STATUS: ${device.currentValue("status")}"
 //    log.debug "TRACK DESC ${playerInfo.longInfo}"
-    sendEvent(name: "trackDescription", value: playerInfo.longInfo)
+    sendEvent(name: "trackDescription", value: playerInfo.longInfo, displayed: false)
+    def artist = playerInfo.artist ?: ""
+    def album = playerInfo.album ?: ""
+	def artURL
+    if (playerInfo.artURL) {
+    	artURL = playerInfo.artURL
+    }
+    else {
+    	if (playerInfo.coverId) {
+    		artURL = "http://${playerInfo.ip}:${playerInfo.port}/music/${playerInfo.coverId}/cover.jpg"
+        }
+        else {artURL = null}
+    }
+    def cover = (artURL) ? ", \"albumArtUrl\":\"${artURL}\"" : ""
+	def trackJSON = "{\"title\":\"${playerInfo.trackName}\",\"artist\":\"${artist}\",\"album\":\"${album}\"${cover},\"mediaSource\":\"${playerInfo.type}\"}"
+//    log.debug trackJSON
+	sendEvent(name: "audioTrackData", value: trackJSON, displayed: false)    
     
     if (playerInfo.playerVol != null) {
     	sendEvent(name: "level", value: playerInfo.playerVol)
         sendEvent(name: "volume", value: playerInfo.playerVol)
 		if (playerInfo.playerVol >= 0) {
-           	sendEvent(name: "mute", value: "unmuted")
+           	sendEvent(name: "mute", value: "unmuted", displayed: false)
         } else {
-           	sendEvent(name: "mute", value: "muted")       
+           	sendEvent(name: "mute", value: "muted", displayed: false)       
         }
     }
 
     if (playerInfo.shuffle != null) {
 //  		log.debug "REPORTED SHUFFLE ${playerInfo.shuffle}"
-       	sendEvent(name: "playbackShuffle", value: playerInfo.shuffle)
+
+		def shuffleMode
+        switch(playerInfo.shuffle) {
+    		case "0" :
+				shuffleMode = "disabled"
+        		break
+        	case "1" :
+				shuffleMode = "enabled"
+        		break
+        	case "2" :
+				shuffleMode = "enabled"
+        		break
+        	default:
+				shuffleMode = "disabled"
+    			log.debug "UNKNOWN PLAYER REPEAT"
+    	}
+       	sendEvent(name: "playbackShuffle", value: shuffleMode, displayed: false)
        
     }
 
     if (playerInfo.repeat != null) {
+
 //  		log.debug "REPORTED Repeat ${playerInfo.repeat}"
-       	sendEvent(name: "playbackRepeatMode", value: playerInfo.repeat)
+		def repeatMode
+        switch(playerInfo.repeat) {
+    		case "0" :
+				repeatMode = "off"
+        		break
+        	case "1" :
+				repeatMode = "one"
+        		break
+        	case "2" :
+				repeatMode = "all"
+        		break
+        	default:
+				repeatMode = "off"
+    			log.debug "UNKNOWN PLAYER REPEAT"
+    	}
+        
+       	sendEvent(name: "playbackRepeatMode", value: repeatMode, displayed: false)
        
     }
 //    log.debug "UPDATE PLAYLIST LENGTH ${playerInfo.playlistLength}"
     if  (playerInfo.playlistLength != null) {
-       	sendEvent(name: "playlistLength", value: playerInfo.playlistLength)
+       	sendEvent(name: "playlistLength", value: playerInfo.playlistLength, displayed: false)
     }
 
-    if  (playerInfo.power == 1) {sendEvent(name: "switch", value: "on")} 
-    else {sendEvent(name: "switch", value: "off")}
+    if  (playerInfo.power == 1) {sendEvent(name: "switch", value: "on", displayed: false)} 
+    else {sendEvent(name: "switch", value: "off", displayed: false)}
 
 }
 
@@ -623,21 +704,56 @@ def button3() {
 }
 
 def getStatusCommand() {
-	return '"status","-",1,"tags:al"'
+	return '"status","-",1,"tags:alcKoN"'
 }
 
 def setPlaybackStatus(status) {
-
-   	sendEvent(name: "playbackStatus", value: status)
+	log.debug "PLAYBACK STATUS: ${status}"
+   	sendEvent(name: "playbackStatus", value: status, displayed: false)
 
 }
+
+//FAVORITES
+
+def playlists(favorites) {
+
+    sendEvent(name: "presets", value: favorites, displayed: false)
+
+}
+
+def playPreset(presetId) {
+// 	log.debug "PRESET ${presetId}"
+    def favsList = new groovy.json.JsonSlurper().parseText(device.currentValue("presets"))
+//    log.debug "${favsList.size()} ${favsList.id}"
+    def FavsIndex
+    if (favsList.size() > 0) {
+    	FavsIndex = favsList.id.findIndexOf {it == presetId}
+    }
+    else {
+    	FavsIndex = -1
+    }
+	if (FavsIndex >= 0) {
+    	def favName = favsList.name[FavsIndex]
+       	def playerId = device.deviceNetworkId
+	   	def params = "\"playlist\",\"play\",\"${favName}\""
+        log.debug params
+		parent.makeJSONcall(params, playerId, "JSONhandler")
+    } else {log.debug "Favorite Not Found"}
+}
+
+def selectPreset(presetId) {
+ 	log.debug "Select PRESET ${presetId}"
+ 
+}
+
+//*** END FAVORITES
 
 //  Device Health related code
 
 def setHealth() {
 //	log.debug device.hub.id
-	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
-	sendEvent(name: "healthStatus", value: "online")
+	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online", displayed: false)
+	sendEvent(name: "healthStatus", value: "online", displayed: false)
 	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\",  \"hubHardwareId\": \"${device.hub.hardwareID}\"}", displayed: false)
 
 }
