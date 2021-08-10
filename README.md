@@ -1,6 +1,8 @@
 # Smartthings-SqueezeBox-Control
 Smartthings Control for Logitech Media Server and Players (Squeezebox)
 
+**UPDATE** I am no longer supporting any further development of this project. After endless unsuccessful attempts to implement everything in the new app, and the unknown status of lan device development, I have given up. I have left the Smartthings ecosystem and no longer have any interest in continuing with this. Use at your own risk. At any point the environment may change and render this code unusable.
+
 These device handlers provides Smartthings control of multiple Logitech Media Server (Squeezebox) players through a single server interface.
 
 **UPDATE** Version 2.3 of player is a small incremental update to support volume and mute capabilites in new ST app.  Adds new player functions as documented below.  Otherwise, there should be no obvious changes.
